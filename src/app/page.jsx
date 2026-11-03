@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { AlertCircle, CalendarDays, PlusCircle, Pencil } from "lucide-react";
+import { AlertCircle, CalendarDays, Clock, MapPin, PlusCircle, Pencil } from "lucide-react";
 import { getSession } from "@/lib/session";
 import { readAgenda } from "@/lib/storage";
 import { memberName } from "@/lib/config";
@@ -138,7 +138,7 @@ export default async function AgendaPrivadaPage({ searchParams }) {
                       key={ev.id}
                       className="bg-white border border-gray-100 rounded-xl px-5 py-4 shadow-sm hover:shadow-md hover:border-gold/40 transition-all"
                     >
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-start sm:items-center gap-4">
                         <div className="w-14 h-16 bg-primary/5 rounded-xl flex flex-col items-center justify-center flex-shrink-0">
                           <span className="text-gray-400 text-[10px] font-semibold uppercase leading-none mb-1">
                             {date.toLocaleString("pt-BR", { weekday: "short" }).replace(".", "")}
@@ -152,24 +152,29 @@ export default async function AgendaPrivadaPage({ searchParams }) {
                         </div>
 
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-primary text-sm leading-tight truncate">
+                          {/* Nome completo (quebra linha) e local sempre na linha de baixo. */}
+                          <p className="font-semibold text-primary text-sm leading-snug break-words">
                             {ev.title}
-                            {ev.location && ` — ${ev.location}`}
                           </p>
-                          {ev.event_time && (
-                            <p className="text-xs text-gray-400 mt-0.5">
-                              {String(ev.event_time).slice(0, 5)}
+                          {(ev.location || ev.event_time) && (
+                            <p className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-400 mt-1">
+                              {ev.location && (
+                                <span className="flex items-center gap-1">
+                                  <MapPin size={11} className="flex-shrink-0" /> {ev.location}
+                                </span>
+                              )}
+                              {ev.event_time && (
+                                <span className="flex items-center gap-1">
+                                  <Clock size={11} className="flex-shrink-0" />
+                                  {String(ev.event_time).slice(0, 5)}
+                                </span>
+                              )}
                             </p>
                           )}
                         </div>
 
-                        <Link
-                          href={`/evento/${ev.id}`}
-                          prefetch={false}
-                          className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-500 hover:border-gold hover:text-gold transition-colors flex-shrink-0"
-                        >
-                          <Pencil size={12} /> Editar
-                        </Link>
+                        {/* No celular o botão vai para a linha da presença (abaixo). */}
+                        <EditLink id={ev.id} className="hidden sm:flex" />
                       </div>
 
                       {ev.description && (
@@ -182,6 +187,7 @@ export default async function AgendaPrivadaPage({ searchParams }) {
                         <div className="flex items-center gap-3">
                           <span className="text-xs text-gray-400">Sua presença:</span>
                           <AttendanceButtons eventId={ev.id} confirmed={isMineConfirmed} />
+                          <EditLink id={ev.id} className="flex sm:hidden ml-auto" />
                         </div>
                         {confirmed.length > 0 && (
                           <ul className="flex flex-wrap items-center gap-x-4 gap-y-1">
@@ -209,5 +215,17 @@ export default async function AgendaPrivadaPage({ searchParams }) {
         </div>
       </section>
     </>
+  );
+}
+
+function EditLink({ id, className = "" }) {
+  return (
+    <Link
+      href={`/evento/${id}`}
+      prefetch={false}
+      className={`${className} items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-500 hover:border-gold hover:text-gold transition-colors flex-shrink-0`}
+    >
+      <Pencil size={12} /> Editar
+    </Link>
   );
 }
