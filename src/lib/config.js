@@ -7,6 +7,7 @@ export const MEMBERS = {
   304531: "Jean Sydney Pereira Macedo de Almeida",
   189068: "Péricles Luiz Candeira Barros",
   194108: "Paulo Ferreira dos Santos",
+  193149: "Francisco Valdeci de Sousa Cavalcante",
   315690: "Vicente de Paulo da Costa Veloso",
   334960: "Walter Luiz Pereira de Andrade",
 };
