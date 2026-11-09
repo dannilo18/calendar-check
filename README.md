@@ -46,6 +46,7 @@ público.
 | `/documentos/novo`, `/documentos/[nome]`, `/documentos/[nome]/editar` | Criar, ler, editar / renomear / excluir |
 | `/documentos/[nome]/word`, `/documentos/[nome]/pdf` | Baixa o documento como Word (.docx) ou PDF |
 | `/identidade-visual`, `/identidade-visual/gestao` | Galeria de imagens / enviar e excluir |
+| `/api/lembretes` | Lembrete da véspera (cron diário; exige `CRON_SECRET`) |
 | `/arquivos/[categoria]/[arquivo]` | Serve os arquivos (só com sessão; `?baixar=1` força download) |
 
 O menu lateral segue o do Portal do GOB-PI (seção > grupo > ação).
@@ -77,6 +78,23 @@ depois da resposta, então não atrasa quem salvou; falhas vão só para o log.
 2. Gere uma senha de app em myaccount.google.com/apppasswords.
 3. Preencha `GMAIL_USER`, `GMAIL_APP_PASSWORD` e, de preferência, `SITE_URL`.
 4. Preencha o `email` de cada irmão em `membros.json`.
+
+### Lembrete da véspera
+
+Todo dia às 15h (horário de Fortaleza), quem confirmou presença num evento
+do dia seguinte recebe um lembrete com data, horário, local e descrição.
+Só recebe quem confirmou e tem e-mail em `membros.json`. Confirmar depois
+das 15h da véspera não gera lembrete.
+
+- Agendado pelo cron da Vercel (`vercel.json`), que chama `/api/lembretes`.
+  No plano gratuito a Vercel pode disparar a qualquer momento entre 15h e
+  15h59.
+- Preencha `CRON_SECRET` na Vercel (`openssl rand -hex 32`); sem ele a rota
+  responde 401 e nada é enviado.
+- Cada evento é lembrado uma vez só (`reminder_sent_for` no `agenda.json`);
+  se a data mudar, ele é lembrado de novo na nova véspera.
+- Para disparar na mão:
+  `curl -H "Authorization: Bearer $CRON_SECRET" https://SEU-SITE/api/lembretes`
 
 E-mails vazios ou inválidos não recebem. Limite do Gmail gratuito: ~500
 destinatários/dia.

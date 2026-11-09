@@ -92,32 +92,54 @@ function plainText({ title, rows = [], text, button }) {
 }
 
 /**
+ * Envia um e-mail no layout da agenda para `recipients` (cópia oculta: ninguém
+ * vê o endereço dos outros). Devolve quantos destinatários receberam; 0 se não
+ * houver destinatário ou e-mail configurado. Erro de envio sobe para quem chamou.
+ *
+ * @param {{ recipients: string[], subject: string, eyebrow: string,
+ *           title: string, rows?: [string, string][], text?: string,
+ *           button: { label: string, path: string }, footer: string,
+ *           baseUrl?: string }} msg   baseUrl: obrigatório fora da requisição (after())
+ */
+export async function sendEmail({ recipients, baseUrl, ...msg }) {
+  const mailer = getTransport();
+  if (!mailer) {
+    console.info(`E-mail "${msg.subject}" não enviado: e-mail não configurado (GMAIL_USER/GMAIL_APP_PASSWORD).`);
+    return 0;
+  }
+  if (recipients.length === 0) return 0;
+  const content = { ...msg, button: { label: msg.button.label, href: `${baseUrl ?? (await siteUrl())}${msg.button.path}` } };
+  await mailer.sendMail({
+    from: { name: "Agenda Privada", address: SENDER },
+    to: { name: "Agenda Privada", address: SENDER },
+    bcc: recipients,
+    subject: msg.subject,
+    text: plainText(content),
+    html: layout(content),
+  });
+  return recipients.length;
+}
+
+/**
  * Agenda o envio para depois da resposta (não atrasa quem salvou). Os
- * e-mails são lidos nessa hora; todos os membros com e-mail recebem, menos o autor; os endereços vão em cópia
- * oculta, ninguém vê o dos outros. Falha no envio só vai para o log.
+ * e-mails são lidos nessa hora; todos os membros com e-mail recebem, menos o
+ * autor. Falha no envio só vai para o log.
  *
  * @param {{ author: { cim: string, name: string }, subject: string,
  *           eyebrow: string, title: string, rows?: [string, string][],
  *           text?: string, button: { label: string, path: string } }} msg
  */
-export async function notifyMembers(msg) {
-  const mailer = getTransport();
-  if (!mailer) {
+export async function notifyMembers({ author, ...msg }) {
+  if (!getTransport()) {
     console.info(`Notificação "${msg.subject}" não enviada: e-mail não configurado (GMAIL_USER/GMAIL_APP_PASSWORD).`);
     return;
   }
-
+  // headers() só pode ser lido durante a requisição, não dentro do after().
   const base = await siteUrl();
-  const content = {
-    ...msg,
-    button: { label: msg.button.label, href: `${base}${msg.button.path}` },
-    footer: `Enviado automaticamente pela Agenda Privada porque ${msg.author.name} fez esta alteração.`,
-  };
-
   after(async () => {
     try {
       const recipients = [...(await readMembers()).values()]
-        .filter((m) => m.email && m.cim !== String(msg.author.cim))
+        .filter((m) => m.email && m.cim !== String(author.cim))
         .map((m) => m.email);
       if (recipients.length === 0) {
         console.info(
@@ -125,13 +147,11 @@ export async function notifyMembers(msg) {
         );
         return;
       }
-      await mailer.sendMail({
-        from: { name: "Agenda Privada", address: SENDER },
-        to: { name: "Agenda Privada", address: SENDER },
-        bcc: recipients,
-        subject: msg.subject,
-        text: plainText(content),
-        html: layout(content),
+      await sendEmail({
+        ...msg,
+        recipients,
+        baseUrl: base,
+        footer: `Enviado automaticamente pela Agenda Privada porque ${author.name} fez esta alteração.`,
       });
       console.info(`Notificação "${msg.subject}" enviada para ${recipients.length} membro(s).`);
     } catch (err) {

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/session";
 import { updateAgenda, newId } from "@/lib/storage";
 import { notifyMembers } from "@/lib/notify";
+import { longDate } from "@/lib/library";
 
 const BASE_PATH = "/";
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -30,17 +31,6 @@ function validate(data) {
 }
 
 class NotFound extends Error {}
-
-// "2026-11-20" → "sexta-feira, 20 de novembro de 2026" (sem pular de dia por fuso).
-function longDate(value) {
-  return new Date(`${value}T12:00:00Z`).toLocaleDateString("pt-BR", {
-    timeZone: "UTC",
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
 
 export async function createEventAction(_prevState, formData) {
   const session = await getSession();

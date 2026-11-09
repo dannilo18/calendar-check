@@ -106,3 +106,14 @@ export function normalize(value) {
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase();
 }
+
+// "2026-11-20" → "sexta-feira, 20 de novembro de 2026" (sem pular de dia por fuso).
+export function longDate(value) {
+  return new Date(`${value}T12:00:00Z`).toLocaleDateString("pt-BR", {
+    timeZone: "UTC",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
