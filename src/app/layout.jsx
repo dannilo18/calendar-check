@@ -20,7 +20,7 @@ export default async function RootLayout({ children }) {
       <body className="flex flex-col min-h-screen">
         {session && (
           <header className="bg-primary-dark border-b border-gold/20">
-            <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
+            <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
               <Link href="/" className="flex items-center gap-3 min-w-0">
                 <Lock size={16} className="text-gold flex-shrink-0" />
                 <span className="text-white font-serif font-bold text-sm truncate">Agenda Privada</span>

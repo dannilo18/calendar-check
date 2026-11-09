@@ -2,6 +2,16 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import {
+  ConflictError,
+  GH_BRANCH,
+  contentsUrl,
+  ensureBranchAccessible,
+  gh,
+  githubError,
+  throwWriteError,
+  useGitHub,
+} from "./github";
 
 // Sem banco de dados: eventos e confirmações ficam num único JSON.
 //
@@ -29,8 +39,6 @@ function withDefaults(data) {
     attendances: Array.isArray(data?.attendances) ? data.attendances : [],
   };
 }
-
-class ConflictError extends Error {}
 
 // ---------------------------------------------------------------------------
 // Arquivo local
@@ -60,58 +68,12 @@ const localBackend = {
 // GitHub (repositório privado)
 // ---------------------------------------------------------------------------
 
-const GH_REPO = process.env.GITHUB_REPO; // "dono/repositorio"
-const GH_BRANCH = process.env.GITHUB_BRANCH || "main";
 const GH_PATH = process.env.GITHUB_PATH || "agenda.json";
-
-async function gh(url, init = {}) {
-  return fetch(`https://api.github.com/repos/${GH_REPO}${url}`, {
-    ...init,
-    cache: "no-store",
-    headers: {
-      Accept: "application/vnd.github+json",
-      Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-      "X-GitHub-Api-Version": "2022-11-28",
-      "User-Agent": "calendar-check",
-      ...init.headers,
-    },
-  });
-}
-
-const contentsUrl = `/contents/${GH_PATH.split("/").map(encodeURIComponent).join("/")}`;
-
-// Transforma uma resposta de erro do GitHub numa mensagem que diz o que
-// corrigir na configuração.
-async function githubError(op, res) {
-  const text = await res.text();
-  let message = text;
-  try {
-    message = JSON.parse(text).message ?? text;
-  } catch {}
-
-  const hints = {
-    401: "GITHUB_TOKEN inválido ou expirado. Gere um novo token.",
-    403: 'O token não tem permissão de escrita. Em "Repository permissions", "Contents" deve ser "Read and write".',
-    404: `Repositório "${GH_REPO}" ou branch "${GH_BRANCH}" não encontrado, ou o token não tem acesso a ele. Confira GITHUB_REPO (formato dono/repositorio), GITHUB_BRANCH e se o token inclui esse repositório em "Repository access".`,
-  };
-  const hint = hints[res.status] ?? "";
-  return new Error(`GitHub ${op} ${res.status}: ${message}${hint ? ` — ${hint}` : ""}`);
-}
-
-// Um 404 na leitura pode ser "arquivo ainda não existe" (normal no primeiro
-// uso) ou "repositório/branch inacessível" (configuração errada). Confere a
-// branch para distinguir os dois casos, uma vez por instância.
-let branchChecked = false;
-async function ensureBranchAccessible() {
-  if (branchChecked) return;
-  const res = await gh(`/branches/${encodeURIComponent(GH_BRANCH)}`);
-  if (!res.ok) throw await githubError("read", res);
-  branchChecked = true;
-}
+const agendaUrl = contentsUrl(GH_PATH);
 
 const githubBackend = {
   async read() {
-    const res = await gh(`${contentsUrl}?ref=${encodeURIComponent(GH_BRANCH)}`);
+    const res = await gh(`${agendaUrl}?ref=${encodeURIComponent(GH_BRANCH)}`);
     if (res.status === 404) {
       await ensureBranchAccessible();
       return { data: withDefaults(), sha: null };
@@ -122,7 +84,7 @@ const githubBackend = {
     return { data: withDefaults(JSON.parse(json)), sha: body.sha };
   },
   async write(data, sha) {
-    const res = await gh(contentsUrl, {
+    const res = await gh(agendaUrl, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -132,21 +94,12 @@ const githubBackend = {
         ...(sha ? { sha } : {}),
       }),
     });
-    // 409: sha desatualizado. 422 com "sha": arquivo criado por outra escrita
-    // no meio. Os dois são conflito de concorrência → relê e tenta de novo.
-    if (res.status === 409) throw new ConflictError();
-    if (res.status === 422) {
-      const err = await githubError("write", res);
-      if (/sha/i.test(err.message)) throw new ConflictError();
-      throw err;
-    }
-    if (!res.ok) throw await githubError("write", res);
+    if (!res.ok) await throwWriteError(res);
   },
 };
 
 // ---------------------------------------------------------------------------
 
-const useGitHub = !!(process.env.GITHUB_TOKEN && GH_REPO);
 const backend = useGitHub ? githubBackend : localBackend;
 
 export async function readAgenda() {

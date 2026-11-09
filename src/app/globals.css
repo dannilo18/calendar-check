@@ -52,3 +52,131 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #a87d2a;
 }
+
+/* Documentos em markdown (MarkdownView) */
+.markdown {
+  @apply text-[15px] leading-relaxed text-gray-700 break-words;
+}
+.markdown > :first-child {
+  @apply mt-0;
+}
+.markdown h1 {
+  @apply font-serif text-2xl font-bold text-primary mt-8 mb-4 pb-2 border-b border-gold/30;
+}
+.markdown h2 {
+  @apply font-serif text-xl font-bold text-primary mt-8 mb-3;
+}
+.markdown h3 {
+  @apply font-serif text-lg font-bold text-primary mt-6 mb-2;
+}
+.markdown h4,
+.markdown h5,
+.markdown h6 {
+  @apply font-sans text-sm font-semibold uppercase tracking-wide text-gray-500 mt-5 mb-2;
+}
+.markdown p {
+  @apply my-3;
+}
+.markdown a {
+  @apply text-gold-dark underline underline-offset-2 hover:text-gold;
+}
+.markdown strong {
+  @apply font-semibold text-primary;
+}
+.markdown ul {
+  @apply list-disc pl-6 my-3 space-y-1;
+}
+.markdown ol {
+  @apply list-decimal pl-6 my-3 space-y-1;
+}
+.markdown li > ul,
+.markdown li > ol {
+  @apply my-1;
+}
+.markdown ul.contains-task-list {
+  @apply list-none pl-1;
+}
+.markdown .task-list-item input {
+  @apply mr-2 align-middle accent-gold;
+}
+.markdown blockquote {
+  @apply border-l-4 border-gold/60 bg-cream pl-4 pr-3 py-2 my-4 text-gray-600 italic rounded-r;
+}
+.markdown code {
+  @apply bg-gray-100 text-primary rounded px-1.5 py-0.5 text-[13px] font-mono;
+}
+.markdown pre {
+  @apply bg-gray-900 text-gray-100 rounded-lg p-4 my-4 overflow-x-auto text-[13px];
+}
+.markdown pre code {
+  @apply bg-transparent text-inherit p-0;
+}
+.markdown hr {
+  @apply my-8 border-gray-200;
+}
+.markdown table {
+  @apply w-full my-4 text-sm border-collapse;
+}
+.markdown th {
+  @apply bg-primary/5 text-left font-semibold text-primary px-3 py-2 border border-gray-200;
+}
+.markdown td {
+  @apply px-3 py-2 border border-gray-200 align-top;
+}
+.markdown img {
+  @apply max-w-full h-auto rounded-lg my-4;
+}
+
+/* Editor visual de documentos (DocumentEditor / Tiptap) */
+.doc-editor {
+  @apply min-h-[45vh] text-base focus:outline-none;
+}
+.doc-editor p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  @apply text-gray-300 float-left h-0 pointer-events-none;
+}
+.doc-editor ul[data-type="taskList"] {
+  @apply list-none pl-1;
+}
+.doc-editor ul[data-type="taskList"] li {
+  @apply flex items-start gap-2;
+}
+.doc-editor ul[data-type="taskList"] li > label {
+  @apply mt-1 flex-shrink-0;
+}
+.doc-editor ul[data-type="taskList"] li > label input {
+  @apply w-4 h-4 accent-gold cursor-pointer;
+}
+.doc-editor ul[data-type="taskList"] li > div {
+  @apply flex-1 min-w-0;
+}
+.doc-editor ul[data-type="taskList"] li > div > p {
+  @apply my-0;
+}
+.doc-editor li > p {
+  @apply my-0;
+}
+.doc-editor table {
+  @apply table-fixed;
+}
+.doc-editor td,
+.doc-editor th {
+  @apply relative min-w-[4rem];
+}
+.doc-editor .selectedCell::after {
+  content: "";
+  @apply absolute inset-0 bg-gold/15 pointer-events-none;
+}
+.doc-editor .tableWrapper {
+  @apply overflow-x-auto;
+}
+.doc-editor a {
+  @apply cursor-text;
+}
+.doc-editor hr.ProseMirror-selectednode {
+  @apply border-gold;
+}
+.doc-editor td > p,
+.doc-editor th > p {
+  @apply my-0;
+}

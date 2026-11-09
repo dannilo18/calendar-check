@@ -6,7 +6,7 @@ import { readAgenda } from "@/lib/storage";
 import { memberName } from "@/lib/config";
 import AttendanceButtons from "@/components/AttendanceButtons";
 import AgendaCalendar from "@/components/AgendaCalendar";
-import PageHeader from "@/components/PageHeader";
+import AppShell from "@/components/AppShell";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Agenda Privada" };
@@ -69,152 +69,146 @@ export default async function AgendaPrivadaPage({ searchParams }) {
   }));
 
   return (
-    <>
-      <PageHeader eyebrow="Restrito" title="Agenda Privada" icon />
+    <AppShell eyebrow="Restrito" title="Agenda Privada" icon>
+      <div className="flex items-center justify-end mb-8">
+        <Link
+          href="/novo"
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-dark transition-colors"
+        >
+          <PlusCircle size={15} /> Novo evento
+        </Link>
+      </div>
 
-      <section className="py-10 bg-white min-h-[60vh]">
-        <div className="max-w-5xl mx-auto px-4">
-          <div className="flex items-center justify-end mb-8">
-            <Link
-              href="/novo"
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-dark transition-colors"
-            >
-              <PlusCircle size={15} /> Novo evento
-            </Link>
+      {loadError && (
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-red-600 text-sm mb-8">
+          <AlertCircle size={15} className="flex-shrink-0" />
+          Não foi possível carregar a agenda. Tente novamente em instantes.
+        </div>
+      )}
+
+      {events.length === 0 ? (
+        <div className="text-center py-20 text-gray-300">
+          <CalendarDays size={40} className="mx-auto mb-3 opacity-30" />
+          <p className="text-sm text-gray-400">Nenhum evento privado cadastrado.</p>
+        </div>
+      ) : (
+        <>
+          <div className="bg-gray-50 rounded-2xl border border-gray-200 p-6 mb-8">
+            <AgendaCalendar events={calendarEvents} />
+          </div>
+          <div className="flex gap-2 mb-5" role="tablist">
+            {FILTERS.map(({ key, label }) => (
+              <Link
+                key={key}
+                href={key === "proximos" ? "/" : `/?mostrar=${key}`}
+                role="tab"
+                aria-selected={filter === key}
+                scroll={false}
+                className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-colors ${
+                  filter === key
+                    ? "bg-primary text-white border-primary"
+                    : "border-gray-200 text-gray-500 hover:border-gold hover:text-gold"
+                }`}
+              >
+                {label}
+              </Link>
+            ))}
           </div>
 
-          {loadError && (
-            <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-red-600 text-sm mb-8">
-              <AlertCircle size={15} className="flex-shrink-0" />
-              Não foi possível carregar a agenda. Tente novamente em instantes.
+          {listed.length === 0 && (
+            <div className="text-center py-12 text-gray-300">
+              <CalendarDays size={32} className="mx-auto mb-3 opacity-30" />
+              <p className="text-sm text-gray-400">
+                {filter === "passados" ? "Nenhum evento passado." : "Nenhum evento próximo."}
+              </p>
             </div>
           )}
 
-          {events.length === 0 ? (
-            <div className="text-center py-20 text-gray-300">
-              <CalendarDays size={40} className="mx-auto mb-3 opacity-30" />
-              <p className="text-sm text-gray-400">Nenhum evento privado cadastrado.</p>
-            </div>
-          ) : (
-            <>
-              <div className="bg-gray-50 rounded-2xl border border-gray-200 p-6 mb-8">
-                <AgendaCalendar events={calendarEvents} />
-              </div>
-              <div className="flex gap-2 mb-5" role="tablist">
-                {FILTERS.map(({ key, label }) => (
-                  <Link
-                    key={key}
-                    href={key === "proximos" ? "/" : `/?mostrar=${key}`}
-                    role="tab"
-                    aria-selected={filter === key}
-                    scroll={false}
-                    className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-colors ${
-                      filter === key
-                        ? "bg-primary text-white border-primary"
-                        : "border-gray-200 text-gray-500 hover:border-gold hover:text-gold"
-                    }`}
-                  >
-                    {label}
-                  </Link>
-                ))}
-              </div>
+          <div className="space-y-3">
+            {listed.map((ev) => {
+              const date = parseDate(ev.event_date);
+              const confirmed = byEvent.get(ev.id) ?? [];
+              const isMineConfirmed = confirmed.some((r) => r.cim === myCim);
+              return (
+                <div
+                  key={ev.id}
+                  className="bg-white border border-gray-100 rounded-xl px-5 py-4 shadow-sm hover:shadow-md hover:border-gold/40 transition-all"
+                >
+                  <div className="flex items-start sm:items-center gap-4">
+                    <div className="w-14 h-16 bg-primary/5 rounded-xl flex flex-col items-center justify-center flex-shrink-0">
+                      <span className="text-gray-400 text-[10px] font-semibold uppercase leading-none mb-1">
+                        {date.toLocaleString("pt-BR", { weekday: "short" }).replace(".", "")}
+                      </span>
+                      <span className="font-bold text-primary text-lg leading-none">
+                        {date.toLocaleString("pt-BR", { day: "2-digit" })}
+                      </span>
+                      <span className="text-gold text-xs font-semibold uppercase">
+                        {date.toLocaleString("pt-BR", { month: "short" }).replace(".", "")}
+                      </span>
+                    </div>
 
-              {listed.length === 0 && (
-                <div className="text-center py-12 text-gray-300">
-                  <CalendarDays size={32} className="mx-auto mb-3 opacity-30" />
-                  <p className="text-sm text-gray-400">
-                    {filter === "passados" ? "Nenhum evento passado." : "Nenhum evento próximo."}
-                  </p>
-                </div>
-              )}
-
-              <div className="space-y-3">
-                {listed.map((ev) => {
-                  const date = parseDate(ev.event_date);
-                  const confirmed = byEvent.get(ev.id) ?? [];
-                  const isMineConfirmed = confirmed.some((r) => r.cim === myCim);
-                  return (
-                    <div
-                      key={ev.id}
-                      className="bg-white border border-gray-100 rounded-xl px-5 py-4 shadow-sm hover:shadow-md hover:border-gold/40 transition-all"
-                    >
-                      <div className="flex items-start sm:items-center gap-4">
-                        <div className="w-14 h-16 bg-primary/5 rounded-xl flex flex-col items-center justify-center flex-shrink-0">
-                          <span className="text-gray-400 text-[10px] font-semibold uppercase leading-none mb-1">
-                            {date.toLocaleString("pt-BR", { weekday: "short" }).replace(".", "")}
-                          </span>
-                          <span className="font-bold text-primary text-lg leading-none">
-                            {date.toLocaleString("pt-BR", { day: "2-digit" })}
-                          </span>
-                          <span className="text-gold text-xs font-semibold uppercase">
-                            {date.toLocaleString("pt-BR", { month: "short" }).replace(".", "")}
-                          </span>
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                          {/* Nome completo (quebra linha) e local sempre na linha de baixo. */}
-                          <p className="font-semibold text-primary text-sm leading-snug break-words">
-                            {ev.title}
-                          </p>
-                          {(ev.location || ev.event_time) && (
-                            <p className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-400 mt-1">
-                              {ev.location && (
-                                <span className="flex items-center gap-1">
-                                  <MapPin size={11} className="flex-shrink-0" /> {ev.location}
-                                </span>
-                              )}
-                              {ev.event_time && (
-                                <span className="flex items-center gap-1">
-                                  <Clock size={11} className="flex-shrink-0" />
-                                  {String(ev.event_time).slice(0, 5)}
-                                </span>
-                              )}
-                            </p>
+                    <div className="flex-1 min-w-0">
+                      {/* Nome completo (quebra linha) e local sempre na linha de baixo. */}
+                      <p className="font-semibold text-primary text-sm leading-snug break-words">
+                        {ev.title}
+                      </p>
+                      {(ev.location || ev.event_time) && (
+                        <p className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-400 mt-1">
+                          {ev.location && (
+                            <span className="flex items-center gap-1">
+                              <MapPin size={11} className="flex-shrink-0" /> {ev.location}
+                            </span>
                           )}
-                        </div>
-
-                        {/* No celular o botão vai para a linha da presença (abaixo). */}
-                        <EditLink id={ev.id} className="hidden sm:flex" />
-                      </div>
-
-                      {ev.description && (
-                        <p className="text-xs text-gray-500 mt-3 whitespace-pre-line">
-                          {ev.description}
+                          {ev.event_time && (
+                            <span className="flex items-center gap-1">
+                              <Clock size={11} className="flex-shrink-0" />
+                              {String(ev.event_time).slice(0, 5)}
+                            </span>
+                          )}
                         </p>
                       )}
-
-                      <div className="mt-4 pt-3 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs text-gray-400">Sua presença:</span>
-                          <AttendanceButtons eventId={ev.id} confirmed={isMineConfirmed} />
-                          <EditLink id={ev.id} className="flex sm:hidden ml-auto" />
-                        </div>
-                        {confirmed.length > 0 && (
-                          <ul className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                            <li className="text-xs font-semibold text-gray-400">
-                              Confirmados ({confirmed.length}):
-                            </li>
-                            {confirmed.map((r) => (
-                              <li
-                                key={r.cim}
-                                className="flex items-center gap-1.5 text-xs text-gray-500"
-                              >
-                                <span className="w-2 h-2 rounded-full bg-green-500" />
-                                {memberName(r.cim)}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
                     </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </div>
-      </section>
-    </>
+
+                    {/* No celular o botão vai para a linha da presença (abaixo). */}
+                    <EditLink id={ev.id} className="hidden sm:flex" />
+                  </div>
+
+                  {ev.description && (
+                    <p className="text-xs text-gray-500 mt-3 whitespace-pre-line">
+                      {ev.description}
+                    </p>
+                  )}
+
+                  <div className="mt-4 pt-3 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-gray-400">Sua presença:</span>
+                      <AttendanceButtons eventId={ev.id} confirmed={isMineConfirmed} />
+                      <EditLink id={ev.id} className="flex sm:hidden ml-auto" />
+                    </div>
+                    {confirmed.length > 0 && (
+                      <ul className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                        <li className="text-xs font-semibold text-gray-400">
+                          Confirmados ({confirmed.length}):
+                        </li>
+                        {confirmed.map((r) => (
+                          <li
+                            key={r.cim}
+                            className="flex items-center gap-1.5 text-xs text-gray-500"
+                          >
+                            <span className="w-2 h-2 rounded-full bg-green-500" />
+                            {memberName(r.cim)}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </AppShell>
   );
 }
 
