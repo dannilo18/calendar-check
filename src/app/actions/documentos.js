@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { ConflictError, deleteFile, listFiles, writeFile } from "@/lib/files";
+import { notifyMembers } from "@/lib/notify";
 import {
   CATEGORIES,
   MAX_UPLOAD_BYTES,
@@ -103,6 +104,17 @@ export async function saveDocumentAction(_prevState, formData) {
 
   // Redireciona daqui (e não do cliente): ao renomear, a página de edição
   // atual deixa de existir e não pode ser recarregada.
+  if (!originalName) {
+    await notifyMembers({
+      author,
+      subject: `Novo documento: ${name}`,
+      eyebrow: "Novo documento de decisão",
+      title: name,
+      rows: [["Criado por", author.name]],
+      button: { label: "Abrir documento", path: docUrl(name) },
+    });
+  }
+
   redirect(docUrl(name));
 }
 
@@ -170,6 +182,20 @@ export async function uploadFileAction(_prevState, formData) {
       return { error: "Outra pessoa enviou um arquivo com esse nome agora há pouco. Tente de novo." };
     console.error(err);
     return { error: "Erro ao enviar o arquivo." };
+  }
+
+  if (category === "identidade-visual" && !sha) {
+    await notifyMembers({
+      author,
+      subject: `Nova imagem na identidade visual: ${baseName(fileName)}`,
+      eyebrow: "Identidade visual",
+      title: `Nova imagem: ${baseName(fileName)}`,
+      rows: [
+        ["Arquivo", fileName],
+        ["Enviada por", author.name],
+      ],
+      button: { label: "Ver na galeria", path: "/identidade-visual" },
+    });
   }
 
   return { success: true, fileName };

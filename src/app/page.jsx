@@ -3,7 +3,7 @@ import Link from "next/link";
 import { AlertCircle, CalendarDays, Clock, MapPin, PlusCircle, Pencil } from "lucide-react";
 import { getSession } from "@/lib/session";
 import { readAgenda } from "@/lib/storage";
-import { memberName } from "@/lib/config";
+import { readMembers } from "@/lib/members";
 import AttendanceButtons from "@/components/AttendanceButtons";
 import AgendaCalendar from "@/components/AgendaCalendar";
 import AppShell from "@/components/AppShell";
@@ -56,6 +56,10 @@ export default async function AgendaPrivadaPage({ searchParams }) {
     filter === "passados"
       ? events.filter((ev) => String(ev.event_date).slice(0, 10) < today).reverse()
       : events.filter((ev) => String(ev.event_date).slice(0, 10) >= today);
+
+  // Quem confirmou e depois saiu de membros.json aparece pelo CIM.
+  const members = await readMembers().catch(() => new Map());
+  const memberName = (cim) => members.get(String(cim))?.name ?? String(cim);
 
   const myCim = session.user.cim;
   const byEvent = new Map();

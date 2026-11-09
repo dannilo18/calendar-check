@@ -6,10 +6,33 @@ documentos da chapa (documentos de decisão e identidade visual).
 - **Sem banco de dados e sem conta em serviço nenhum.** Eventos e
   confirmações ficam num único arquivo JSON (`.data/agenda.json`).
 - **Sem senha.** O login pede CIM e a palavra de verificação definida em
-  `PALAVRA_VERIFICACAO`. Só entram os CIMs de `src/lib/config.js`, onde também
-  ficam os nomes exibidos nas confirmações. A comparação ignora maiúsculas, acentos e espaços nas pontas.
+  `PALAVRA_VERIFICACAO`. Só entram os CIMs de `membros.json` (ver abaixo),
+  que também dá o nome exibido e o e-mail das notificações. A comparação da
+  palavra ignora maiúsculas, acentos e espaços nas pontas.
 - **Sessão** em cookie assinado (HMAC derivado da palavra). Trocar a palavra
-  derruba todas as sessões. Tirar um CIM da lista corta o acesso na hora.
+  derruba todas as sessões. Tirar um CIM de `membros.json` corta o acesso em
+  até 1 minuto.
+
+## Membros (`membros.json`)
+
+Fica na raiz do repositório privado de dados, ao lado do `agenda.json`
+(localmente, em `.data/membros.json`). Não fica neste repositório, que é
+público.
+
+```json
+{
+  "297994": { "nome": "Dannilo Neiva de Carvalho", "email": "fulano@hotmail.com" },
+  "237622": { "nome": "Fulano de Tal", "email": "" }
+}
+```
+
+- A chave é o CIM do login; `nome` identifica o irmão no cabeçalho, nas
+  confirmações de presença e nos e-mails; `email` vazio = não recebe
+  notificações.
+- Editar o arquivo no GitHub vale em até 1 minuto, sem deploy.
+- Sem o arquivo ninguém entra. Com JSON inválido, o site continua usando a
+  última versão lida (erro no log); logo após um deploy, sem versão anterior,
+  o login fica indisponível até o arquivo ser corrigido.
 
 ## Rotas
 
@@ -42,6 +65,21 @@ O menu lateral segue o do Portal do GOB-PI (seção > grupo > ação).
 - Qualquer membro logado pode criar, editar e excluir, como na agenda.
 - Se duas pessoas editam o mesmo documento, a segunda a salvar recebe um
   aviso e o texto dela continua na tela; nada é sobrescrito.
+
+## Notificações por e-mail
+
+Evento novo, documento novo e imagem nova na identidade visual geram um
+e-mail para todos os membros com e-mail cadastrado, menos quem fez a
+alteração (todos em cópia oculta). Edições não notificam. O envio acontece
+depois da resposta, então não atrasa quem salvou; falhas vão só para o log.
+
+1. Crie uma conta Gmail para a chapa e ative a verificação em duas etapas.
+2. Gere uma senha de app em myaccount.google.com/apppasswords.
+3. Preencha `GMAIL_USER`, `GMAIL_APP_PASSWORD` e, de preferência, `SITE_URL`.
+4. Preencha o `email` de cada irmão em `membros.json`.
+
+E-mails vazios ou inválidos não recebem. Limite do Gmail gratuito: ~500
+destinatários/dia.
 
 ## Configuração
 

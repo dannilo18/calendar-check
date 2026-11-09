@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { isAllowedCim } from "@/lib/config";
+import { getMember } from "@/lib/members";
 import { checkWord, createSession, destroySession } from "@/lib/session";
 
 export async function loginAction(_prevState, formData) {
@@ -14,7 +14,7 @@ export async function loginAction(_prevState, formData) {
 
   let ok = false;
   try {
-    ok = checkWord(palavra) && isAllowedCim(cim);
+    ok = checkWord(palavra) && !!(await getMember(cim));
   } catch (err) {
     console.error(err);
     return { error: "Acesso indisponível no momento.", values };

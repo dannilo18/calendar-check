@@ -1,7 +1,7 @@
 import "server-only";
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
-import { isAllowedCim, memberName } from "./config";
+import { getMember } from "./members";
 
 // Sem senha: o acesso é CIM autorizado + palavra de verificação (env).
 // A sessão é um cookie assinado com HMAC derivado da própria palavra, então
@@ -61,9 +61,17 @@ function decode(token) {
 export async function getSession() {
   const store = await cookies();
   const data = decode(store.get(COOKIE_NAME)?.value);
-  // Revalida o CIM a cada request: remover da lista corta o acesso na hora.
-  if (!data || !isAllowedCim(data.cim)) return null;
-  return { user: { cim: String(data.cim), name: memberName(data.cim) } };
+  if (!data) return null;
+  // Revalida o CIM em membros.json: tirar alguém da lista corta o acesso
+  // (em até 1 minuto, pelo cache de members.js).
+  // Se membros.json estiver inacessível (e sem versão em cache), trata como
+  // deslogado: a tela de login avisa que o acesso está indisponível.
+  const member = await getMember(data.cim).catch((err) => {
+    console.error(err);
+    return null;
+  });
+  if (!member) return null;
+  return { user: { cim: member.cim, name: member.name } };
 }
 
 export async function createSession({ cim }) {
